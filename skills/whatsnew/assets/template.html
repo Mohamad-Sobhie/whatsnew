@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>whatsnew composition</title>
+<!--
+  Starter composition for the whatsnew skill. Rewrite every scene from plan.md.
+  Contract: see references/composition.md. All motion must be CSS animations.
+  The example content (a fictional "Acme" checkout) shows each building block.
+-->
+<style>
+  :root {
+    --bg: #0d0f14;
+    --bg-2: #161a23;
+    --panel: #1c212c;
+    --line: #2a3140;
+    --fg: #f3f5f8;
+    --muted: #9aa3b2;
+    --accent: #6ee7b7;
+    --accent-2: #60a5fa;
+    --danger: #f87171;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
+    --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+  body { font-family: var(--font); color: var(--fg); -webkit-font-smoothing: antialiased; }
+
+  .stage {
+    position: relative; width: 1920px; height: 1080px; overflow: hidden;
+    background:
+      radial-gradient(1200px 700px at 85% -10%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent 70%),
+      radial-gradient(900px 600px at -10% 110%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%),
+      var(--bg);
+  }
+
+  /* ---------- scene timing ---------- */
+  .scene {
+    position: absolute; inset: 0; padding: 120px 140px;
+    display: flex; flex-direction: column; justify-content: center; gap: 36px;
+    opacity: 0;
+    animation:
+      scene-in .5s cubic-bezier(.2,.7,.2,1) var(--start) both,
+      scene-out .45s ease-in calc(var(--start) + var(--len) - .45s) forwards;
+  }
+  .scene.last { animation: scene-in .5s cubic-bezier(.2,.7,.2,1) var(--start) both; }
+  @keyframes scene-in  { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: none; } }
+  @keyframes scene-out { from { opacity: 1; } to { opacity: 0; transform: translateY(-12px); } }
+
+  .reveal, .reveal-left, .reveal-zoom {
+    animation: var(--reveal-name, reveal-up) .7s cubic-bezier(.2,.7,.2,1) calc(var(--start) + .15s + var(--d, 0s)) both;
+  }
+  .reveal-left { --reveal-name: reveal-left; }
+  .reveal-zoom { --reveal-name: reveal-zoom; }
+  @keyframes reveal-up   { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+  @keyframes reveal-left { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
+  @keyframes reveal-zoom { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
+
+  /* ---------- type ---------- */
+  .kicker { font-size: 30px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  .headline { font-size: 128px; line-height: 1.02; font-weight: 800; letter-spacing: -.03em; max-width: 1500px; }
+  .headline.md { font-size: 84px; }
+  .sub { font-size: 40px; line-height: 1.35; color: var(--muted); max-width: 1300px; }
+  .headline, .sub, .item { text-wrap: balance; }
+  .center { align-items: center; text-align: center; }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 10px; align-self: flex-start;
+    padding: 10px 22px; border-radius: 999px; font-size: 24px; font-weight: 600;
+    background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+
+  /* ---------- before / after ---------- */
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: stretch; }
+  .panel { display: flex; flex-direction: column; gap: 20px; }
+  .panel-label { font-size: 26px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .panel.after .panel-label { color: var(--accent); }
+  .panel img { width: 100%; border-radius: 18px; border: 1px solid var(--line); }
+
+  /* ---------- fake app window ---------- */
+  .window { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; overflow: hidden;
+            box-shadow: 0 40px 80px -30px rgba(0,0,0,.6); flex: 1; }
+  .window .bar { height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 20px;
+                 background: var(--bg-2); border-bottom: 1px solid var(--line); }
+  .window .bar i { width: 14px; height: 14px; border-radius: 50%; background: #3a4252; }
+  .window .bar span { margin-left: 14px; font-size: 20px; color: var(--muted); }
+  .window .body { padding: 36px; display: flex; flex-direction: column; gap: 18px; }
+  .panel.after .window { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+
+  .step { display: flex; align-items: center; gap: 18px; font-size: 28px; color: var(--muted);
+          padding: 18px 22px; border-radius: 12px; background: var(--bg-2); border: 1px solid var(--line); }
+  .step b { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+            font-size: 22px; background: var(--line); color: var(--fg); }
+  .btn { margin-top: 8px; padding: 24px; border-radius: 14px; text-align: center; font-size: 32px; font-weight: 700;
+         background: var(--accent); color: #062b1f; }
+  .btn.ghost { background: transparent; color: var(--muted); border: 1px dashed var(--line); font-weight: 500; }
+  .row { display: flex; justify-content: space-between; font-size: 28px; padding: 6px 2px; }
+  .row.total { font-weight: 800; font-size: 34px; border-top: 1px solid var(--line); padding-top: 18px; }
+
+  /* ---------- code + metrics ---------- */
+  .split { display: grid; grid-template-columns: 1.35fr 1fr; gap: 64px; align-items: center; }
+  .code { background: #0a0c10; border: 1px solid var(--line); border-radius: 18px; padding: 40px 44px;
+          font-family: var(--mono); font-size: 30px; line-height: 1.6; color: #d6deeb; white-space: pre; }
+  .code .k { color: #c792ea; } .code .s { color: var(--accent); } .code .c { color: #637081; } .code .f { color: var(--accent-2); }
+  .metric { display: flex; flex-direction: column; gap: 8px; }
+  .metric .n { font-size: 160px; font-weight: 800; letter-spacing: -.04em; line-height: 1; color: var(--accent); }
+  .metric .l { font-size: 34px; color: var(--muted); }
+
+  /* ---------- real screenshots ---------- */
+  /* <div class="shot"><div class="zoom"><img src="shots/after-x.png"><div class="spot" style="--x:..;--y:..;--w:..;--h:.."></div></div></div> */
+  .shot, .wipe { position: relative; border-radius: 20px; overflow: hidden; border: 1px solid var(--line);
+                 background: var(--panel); box-shadow: 0 50px 100px -40px rgba(0,0,0,.7); }
+  .shot img, .wipe img { display: block; width: 100%; height: auto; }
+  .zoom { position: relative; transform-origin: var(--origin, 50% 40%);
+          animation: slow-zoom var(--len) linear var(--start) both; }
+  @keyframes slow-zoom { from { transform: scale(1); } to { transform: scale(var(--zoom, 1.06)); } }
+
+  /* Spotlight on the changed element; coords come from the capture manifest's "focus". */
+  .spot { position: absolute; left: var(--x); top: var(--y); width: var(--w); height: var(--h);
+          border: 4px solid var(--accent); border-radius: 14px; pointer-events: none;
+          box-shadow: 0 0 0 9999px rgba(5, 7, 10, .55), 0 0 40px color-mix(in srgb, var(--accent) 60%, transparent);
+          animation: spot-in .6s cubic-bezier(.2,.7,.2,1) calc(var(--start) + var(--d, 1s)) both; }
+  @keyframes spot-in { from { opacity: 0; transform: scale(1.25); } to { opacity: 1; transform: none; } }
+
+  /* Before → after wipe on the same screen:
+     <div class="wipe"><img src="shots/before-x.png"><img class="after-img" src="shots/after-x.png">
+       <div class="divider"></div><span class="tag t-before">Before</span><span class="tag t-after">After</span></div> */
+  .wipe { --wipe-at: 1.4s; --wipe-len: 1.3s; }
+  .wipe .after-img { position: absolute; inset: 0; clip-path: inset(0 100% 0 0);
+                     animation: wipe-reveal var(--wipe-len) cubic-bezier(.65,0,.25,1) calc(var(--start) + var(--wipe-at)) both; }
+  .wipe .divider { position: absolute; top: 0; bottom: 0; width: 5px; margin-left: -2px; background: var(--accent);
+                   box-shadow: 0 0 30px var(--accent); left: 0; opacity: 0;
+                   animation: wipe-line var(--wipe-len) cubic-bezier(.65,0,.25,1) calc(var(--start) + var(--wipe-at)) both; }
+  .wipe .tag { position: absolute; bottom: 24px; padding: 10px 20px; border-radius: 999px; font-size: 24px; font-weight: 700;
+               letter-spacing: .1em; text-transform: uppercase; backdrop-filter: blur(6px); }
+  .wipe .t-before { left: 24px; background: rgba(10,12,16,.75); color: var(--fg);
+                    animation: fade-out .3s ease calc(var(--start) + var(--wipe-at)) both; }
+  .wipe .t-after { right: 24px; background: var(--accent); color: #062b1f;
+                   animation: fade-in .4s ease calc(var(--start) + var(--wipe-at) + var(--wipe-len) - .2s) both; }
+  @keyframes wipe-reveal { to { clip-path: inset(0 0 0 0); } }
+  @keyframes wipe-line { 0% { left: 0; opacity: 1; } 90% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
+  @keyframes fade-out { to { opacity: 0; } }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+  .media-row { display: grid; grid-template-columns: 1fr 2fr; gap: 72px; align-items: center; }
+
+  /* ---------- recap ---------- */
+  .list { display: flex; flex-direction: column; gap: 26px; }
+  .item { display: flex; align-items: center; gap: 28px; font-size: 52px; font-weight: 650; }
+  .item::before { content: ""; width: 18px; height: 18px; border-radius: 6px; background: var(--accent); flex: none; }
+
+  .foot { position: absolute; left: 140px; right: 140px; bottom: 70px; display: flex; justify-content: space-between;
+          font-size: 24px; color: var(--muted); font-family: var(--mono); }
+</style>
+</head>
+<body data-duration="20" data-fps="30">
+<div class="stage">
+
+  <!-- 1. Title -->
+  <section class="scene" style="--start: 0s; --len: 4s">
+    <div class="kicker reveal">New in Acme Shop</div>
+    <h1 class="headline reveal" style="--d: .15s">Checkout in two taps</h1>
+    <p class="sub reveal" style="--d: .35s">Saved details mean returning customers pay without retyping a thing.</p>
+  </section>
+
+  <!-- 2. Main moment: before / after -->
+  <section class="scene" style="--start: 4s; --len: 7s">
+    <div class="ba">
+      <div class="panel before reveal-left">
+        <div class="panel-label">Before</div>
+        <div class="window">
+          <div class="bar"><i></i><i></i><i></i><span>acme.shop/checkout</span></div>
+          <div class="body">
+            <div class="step"><b>1</b>Shipping address</div>
+            <div class="step"><b>2</b>Delivery options</div>
+            <div class="step"><b>3</b>Card details</div>
+            <div class="step"><b>4</b>Review order</div>
+            <div class="btn ghost">Continue</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel after reveal-left" style="--d: .6s">
+        <div class="panel-label">After</div>
+        <div class="window">
+          <div class="bar"><i></i><i></i><i></i><span>acme.shop/checkout</span></div>
+          <div class="body">
+            <div class="row"><span>Ship to</span><span>Home · Oslo</span></div>
+            <div class="row"><span>Pay with</span><span>Visa ···· 4242</span></div>
+            <div class="row total"><span>Total</span><span>NOK 549</span></div>
+            <div class="btn reveal-zoom" style="--d: 1.4s">Pay now</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Supporting moment: dev detail + metric -->
+  <section class="scene" style="--start: 11s; --len: 5s">
+    <div class="chip reveal">For developers</div>
+    <div class="split">
+<pre class="code reveal" style="--d: .2s"><span class="c">// one call, payment method remembered</span>
+<span class="k">const</span> order = <span class="k">await</span> <span class="f">checkout</span>({
+  cartId,
+  useSaved: <span class="k">true</span>,
+});</pre>
+      <div class="metric reveal-zoom" style="--d: .6s">
+        <div class="n">4 → 1</div>
+        <div class="l">screens to place an order</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Recap + outro (holds to the end) -->
+  <section class="scene last" style="--start: 16s; --len: 4s">
+    <div class="kicker reveal">What's new</div>
+    <div class="list">
+      <div class="item reveal" style="--d: .15s">Saved addresses and cards</div>
+      <div class="item reveal" style="--d: .3s">One-screen checkout</div>
+      <div class="item reveal" style="--d: .45s">New <code>checkout()</code> API option</div>
+    </div>
+    <div class="foot reveal" style="--d: .7s"><span>feature/one-tap-checkout → main</span><span>v2.4</span></div>
+  </section>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "whatsnew-scripts",
+  "private": true,
+  "type": "module",
+  "description": "Render helpers for the whatsnew skill",
+  "dependencies": {
+    "playwright": "^1.48.0"
+  }
+}

@@ -1,0 +1,4 @@
+node_modules/
+whatsnew-output/
+.DS_Store
+*.mp4
