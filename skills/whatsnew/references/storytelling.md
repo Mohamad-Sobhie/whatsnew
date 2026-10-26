@@ -37,9 +37,11 @@ For `--for dev`, it is fine to be more literal ("Typed API client, zero config")
 | Moment 1   | 6–8 s  | The biggest change — usually a before/after     |
 | Moment 2–3 | 5–6 s each | Supporting changes                          |
 | Recap      | 4 s    | 2–4 short lines of what's new                   |
-| Outro      | 3 s    | Version / branch, where to try it               |
+| Outro      | 3 s    | The app's logo, and where to try it (if known)  |
 
 Scale proportionally for 20 s (drop a moment) or 45 s (add one, give moments more room).
+
+Never show branch names, commit SHAs, PR numbers or file paths on screen — viewers don't care how it was built. They belong in `share.md` (the PR snippet), not the video. Exception: `--for dev` may name an API or function that users call.
 
 ## Tone
 

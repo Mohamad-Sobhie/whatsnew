@@ -4,9 +4,12 @@
 
 `/whatsnew` compares two git branches, works out what's actually new, and renders a short (20–45 s) "what's new" video plus ready-to-paste release notes — for developers, designers, and product owners.
 
+<p align="center"><img src="docs/demo.gif" alt="A 20-second whatsnew video: title card, before/after wipe of a checkout page, spotlight on the new pay button, recap" width="800"></p>
+<p align="center"><sub>Made with <code>/whatsnew</code> from a demo shop's feature branch: real screenshots of both branches, the app's own logo and colours.</sub></p>
+
 Inspired by [brag](https://github.com/latent-spaces/brag), which makes launch videos for whole projects. `whatsnew` focuses on *the change*: what one branch adds on top of another.
 
-> Status: early draft (v0.3). Captures real before/after screenshots of web apps; music and voiceover are next.
+> Status: v0.4 — captures real before/after screenshots of web apps and brands the video with the app's logo, fonts and colours. Music and voiceover are next.
 
 ## What you get
 
@@ -16,6 +19,8 @@ whatsnew-output/
 ├── plan.md           # headline, audience, chosen moments, cut list
 ├── shots.json        # which screens to capture, and how to reach them
 ├── shots/            # before-*.png / after-*.png screenshots + manifests
+├── brand/            # the app's logo, found in your repo
+├── fonts/            # the app's fonts, or the bundled ones
 ├── composition.html  # the video as an HTML page (edit and re-render)
 ├── whatsnew.mp4      # the video, 1920×1080
 └── share.md          # release note, Slack post, PR snippet
@@ -108,6 +113,7 @@ node render.mjs ../assets/template.html /tmp/example.mp4
 - [ ] Background music and sound effects
 - [ ] Optional voiceover
 - [ ] Vertical (9:16) and square formats
+- [x] v0.4 — branding: the app's logo, fonts and colours; no branch names on screen
 - [x] Claude Code plugin marketplace install and `npx skills add`
 
 ## Releasing a new version
@@ -118,4 +124,4 @@ node render.mjs ../assets/template.html /tmp/example.mp4
 
 ## License
 
-MIT
+MIT. Bundled fonts (Bricolage Grotesque, Instrument Sans, IBM Plex Mono) are under the SIL Open Font License — see `skills/whatsnew/assets/fonts/OFL.txt`.

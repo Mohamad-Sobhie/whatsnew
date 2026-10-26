@@ -50,6 +50,35 @@ Follow what `plan.md` said under "How to show it"; if you change your mind, upda
 
 Before rendering, add up the scenes: the last scene's `--start` + `--len` should equal `data-duration`. Leave ~0.4 s between the end of one scene's reveal animations and its fade-out so text is readable.
 
+## Brand: logo, fonts, colours
+
+The video should look like it came from the product's team, not from a template.
+
+### Logo
+
+Find the app's logo and copy it to `whatsnew-output/brand/` (keep its file type). Look, in order:
+
+1. Files named like a logo: `**/logo*.{svg,png}`, `**/brand/**`, `**/wordmark*` — under `public/`, `static/`, `assets/`, `src/assets/`, `wwwroot/`, `ClientApp/public/`.
+2. A logo component: `Logo.tsx`, `logo.component.*`, an inline `<svg>` in the header/navbar. Copy the SVG markup into its own `.svg` file.
+3. App icons: `apple-touch-icon.png`, `icon.svg`, `favicon.svg`, the largest icon in `manifest.json` / `site.webmanifest`.
+4. With screenshots available: capture the header's logo element with a `selector` shot (`only: "after"`, name `logo`) and use that PNG.
+
+Prefer a horizontal wordmark for `.logo`, and a square mark for `.brand-mark` if both exist. Then:
+- Title scene: `<img class="logo" src="brand/...">` above the headline.
+- Middle scenes: one `<img class="brand-mark">` directly in `.stage` with `--from` = start of scene 2 and `--until` = start of the last scene.
+- Last scene: the logo again, smaller.
+
+A dark logo on the dark video → add class `on-light`, or switch the theme to light (swap `--bg`/`--fg`). An SVG logo that uses web-font text renders with a fallback font inside `<img>` — if the text looks wrong, use a PNG of it (from the app's icons or a screenshot) instead. If nothing is found, leave the logos out and say so in the report; never invent a logo.
+
+### Fonts
+
+1. **Use the app's own fonts** when you can find the files: `@font-face` in the app's CSS, font files in `public/fonts`/`assets/fonts`, `@fontsource/*` packages in `node_modules`, or (Next.js `next/font`) the `.woff2` files in the after worktree's `.next/static/media/` once its dev server has served a page. Copy them to `whatsnew-output/fonts/` and point the `@font-face` rules and `--display`/`--font` at them.
+2. Otherwise keep the bundled pair: **Bricolage Grotesque** for headlines and numbers, **Instrument Sans** for text, **IBM Plex Mono** for code (all OFL, already in the template).
+
+Never fall back to Inter, Roboto, Arial or the system UI font — they make every video look the same. The bundled fonts cover Latin scripts (including æøå); for Arabic, Hebrew, CJK or other scripts, use the app's font for that script.
+
+The renderer warns about any font or image that failed to load — fix those before you deliver.
+
 ## Palette
 
-The template ships with a neutral dark theme via CSS variables at the top (`--bg`, `--fg`, `--accent`, …). If the repo has obvious brand colours (Tailwind config, CSS variables, theme file), swap them in — the video should feel like the product.
+The template ships with a neutral dark theme via CSS variables at the top (`--bg`, `--fg`, `--accent`, …). For a light theme, also set `--spot-dim` to a white veil (`rgba(255,255,255,.62)`) and make sure `.spot`'s ring colour (`--accent`) differs from the element it circles. If the repo has obvious brand colours (Tailwind config, CSS variables, theme file), swap them in — the video should feel like the product.

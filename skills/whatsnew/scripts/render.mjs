@@ -47,6 +47,16 @@ page.on("requestfailed", (r) => errors.push(`failed to load ${r.url()}`));
 await page.goto(pathToFileURL(resolve(input)).href, { waitUntil: "load" });
 await page.evaluate(() => document.fonts.ready);
 
+// Missing fonts and images silently fall back or vanish in the video — surface them.
+const broken = await page.evaluate(async () => {
+  await Promise.all([...document.images].map((img) => (img.complete ? null : img.decode().catch(() => {}))));
+  return [
+    ...[...document.fonts].filter((f) => f.status === "error").map((f) => `font failed to load: ${f.family}`),
+    ...[...document.images].filter((i) => !i.naturalWidth).map((i) => `image failed to load: ${i.getAttribute("src")}`),
+  ];
+});
+errors.push(...broken);
+
 const meta = await page.evaluate(() => ({
   duration: Number(document.body.dataset.duration),
   fps: Number(document.body.dataset.fps || 30),

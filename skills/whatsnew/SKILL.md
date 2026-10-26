@@ -88,7 +88,16 @@ Skip this step for non-UI changes, for projects you can't start locally, or with
 
 ### 6. Build the composition
 
-Read `references/composition.md`. Copy `<skill-dir>/assets/template.html` to `whatsnew-output/composition.html` and rewrite it scene by scene from the plan.
+Read `references/composition.md`. Copy the starter files, then rewrite `composition.html` scene by scene from the plan:
+
+```
+cp <skill-dir>/assets/template.html whatsnew-output/composition.html
+cp -R <skill-dir>/assets/fonts whatsnew-output/fonts
+mkdir -p whatsnew-output/brand
+```
+
+- **Brand it** (see "Brand" in `references/composition.md`): find the app's logo and put it in `whatsnew-output/brand/`; use the app's fonts and colours when the repo has them. The example `brand/logo.png` from the template is fictional — never ship it.
+- **No branch names, SHAs, PR numbers or file paths on screen.**
 
 - One idea per scene. Scenes of 3–6 seconds. Total duration = `--length`.
 - Visuals for UI changes: use the screenshots in `whatsnew-output/shots/` when you have them (`.wipe` for before/after, `.shot` + `.spot` to point at the change). Without screenshots, rebuild the relevant UI in HTML/CSS from the actual component code (real labels, real fields, real layout) — not a generic mock.
