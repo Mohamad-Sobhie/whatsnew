@@ -24,6 +24,8 @@ You own the story. The scripts only collect facts and render frames — deciding
 - `--no-capture` — don't run the app; build all visuals in HTML.
 - `--before-url` / `--after-url` — capture from already-running environments (e.g. production and a PR preview) instead of starting the app locally.
 
+Installed as a Claude Code plugin, the command is `/whatsnew:whatsnew`; the arguments are the same.
+
 If the user gives a PR number or a description instead of branch names, work out the branches from git and confirm in one line before going on.
 
 `<skill-dir>` below means the folder this SKILL.md lives in.

@@ -51,17 +51,38 @@ From inside any git repository, in Claude Code (or another agent that supports A
 
 ## Install
 
-**Manual (works today):**
+### Claude Code plugin (recommended)
+
+Inside Claude Code:
+
+```
+/plugin install whatsnew --marketplace Mohamad-Sobhie/whatsnew
+```
+
+Or in two steps, from your terminal:
+
+```bash
+claude plugin marketplace add Mohamad-Sobhie/whatsnew
+claude plugin install whatsnew@whatsnew
+```
+
+Run it as `/whatsnew:whatsnew` (plugin skills are prefixed with the plugin name), or just ask Claude to "make a what's new video for this branch". Update later with `claude plugin marketplace update whatsnew`.
+
+### Any agent (Claude Code, Cursor, Codex, Copilot, …)
+
+```bash
+npx skills add Mohamad-Sobhie/whatsnew --skill whatsnew
+```
+
+Add `-g` to install it for all your projects instead of just the current one. Run it as `/whatsnew`.
+
+### Manual
 
 ```bash
 git clone https://github.com/Mohamad-Sobhie/whatsnew.git
 mkdir -p ~/.claude/skills
 ln -s "$(pwd)/whatsnew/skills/whatsnew" ~/.claude/skills/whatsnew
 ```
-
-Then open Claude Code in any repo and run `/whatsnew`.
-
-Plugin-marketplace install is planned.
 
 ## How it works
 
@@ -86,7 +107,13 @@ node render.mjs ../assets/template.html /tmp/example.mp4
 - [ ] Background music and sound effects
 - [ ] Optional voiceover
 - [ ] Vertical (9:16) and square formats
-- [ ] Claude Code plugin marketplace install
+- [x] Claude Code plugin marketplace install and `npx skills add`
+
+## Releasing a new version
+
+1. Bump `version` in `.claude-plugin/plugin.json` (users on the plugin only get changes when the version changes).
+2. Run `claude plugin validate --strict .`
+3. Commit, tag (`git tag v0.3.0`) and push with `--tags`.
 
 ## License
 

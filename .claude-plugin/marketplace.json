@@ -1,0 +1,15 @@
+{
+  "name": "whatsnew",
+  "description": "whatsnew — turn a branch diff into a feature intro video",
+  "owner": {
+    "name": "Mohamad Sobhie",
+    "url": "https://github.com/Mohamad-Sobhie"
+  },
+  "plugins": [
+    {
+      "name": "whatsnew",
+      "source": "./",
+      "description": "Compare two git branches and turn what's new into a short feature intro video (MP4) with release-note copy."
+    }
+  ]
+}

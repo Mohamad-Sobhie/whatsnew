@@ -1,0 +1,13 @@
+{
+  "name": "whatsnew",
+  "version": "0.2.0",
+  "description": "Compare two git branches and turn what's new into a short feature intro video (MP4) with release-note copy, for developers, designers and product owners.",
+  "author": {
+    "name": "Mohamad Sobhie",
+    "url": "https://github.com/Mohamad-Sobhie"
+  },
+  "homepage": "https://github.com/Mohamad-Sobhie/whatsnew",
+  "repository": "https://github.com/Mohamad-Sobhie/whatsnew",
+  "license": "MIT",
+  "keywords": ["video", "release-notes", "changelog", "git", "demo", "playwright", "ffmpeg"]
+}
