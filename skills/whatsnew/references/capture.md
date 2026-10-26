@@ -41,6 +41,23 @@ Use the install command `worktrees.sh` printed, and your agent's background-proc
 | Remix (Vite)         | `npm run dev -- --port 4102`                           |
 | Rails / Django / other | follow the README; pass the port the framework's way |
 
+### Apps with a separate backend (e.g. .NET API + React, Node API + Vite)
+
+Find how the frontend reaches the API first: a dev proxy (`server.proxy` in `vite.config.*`, `"proxy"` in a CRA `package.json`, `setupProxy.js`), or a base URL env var (`VITE_API_URL`, `REACT_APP_API_URL`, `NEXT_PUBLIC_API_URL`).
+
+- **Backend unchanged in the diff** (only frontend files changed): run **one** backend, from the `after` worktree, on the port the frontend already expects. Start both frontends (4101, 4102) pointing at it. This is the common case and the simplest.
+- **Backend changed too**: run one backend per side on its own port (before → 5101, after → 5102), and point each frontend at its own backend — set the env var, or edit the proxy target **in that worktree's copy only** (worktrees are throwaway; never edit the user's main checkout).
+
+Backend start commands:
+
+| Stack | Command (after side shown) |
+|---|---|
+| ASP.NET Core | `ASPNETCORE_ENVIRONMENT=Development dotnet run --project <Api.csproj> --urls http://localhost:5102` |
+| Node / Express | `PORT=5102 npm run dev` (in the API folder) |
+| Django | `python manage.py runserver 5102` |
+
+If the ASP.NET project starts the React app itself (SpaProxy / `SpaProxyLaunchCommand`), start the React dev server separately on 4101/4102 instead, so you control the ports. A database the app needs must already be running locally; use the dev database and seed data the README describes, never production.
+
 Install both sides in parallel if you can — it's the slowest part. If the server log shows it needs something you don't have (a database, an API key), tell the user what's missing in one line and fall back to HTML visuals. Never invent credentials.
 
 ## 3. Write the shot plan
@@ -76,7 +93,7 @@ Write `whatsnew-output/shots.json`. One shot per moment in `plan.md` that has a 
 | `path`       | URL path to open |
 | `actions`    | Steps before the shot: `click`, `fill: [sel, value]`, `press`, `hover`, `select: [sel, value]`, `check`, `scroll: px`, `waitFor`, `wait: ms`, `goto` |
 | `waitFor`    | Element that must be visible before shooting |
-| `focus`      | The element that changed. Its position is saved in the manifest as `focus: {x, y, w, h}` percentages — paste them straight into a `.spot` in the video |
+| `focus`      | The element that changed. Safe to set even if it only exists on the after side (the before shot is still taken). Its position is saved in the manifest as `focus: {x, y, w, h}` percentages — paste them straight into a `.spot` in the video |
 | `selector`   | Screenshot just this element instead of the viewport (great for small UI changes) |
 | `fullPage`   | Capture the whole scrollable page |
 | `only`       | `"after"` for screens that are new, `"before"` for screens that were removed |

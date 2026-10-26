@@ -6,7 +6,7 @@
 
 Inspired by [brag](https://github.com/latent-spaces/brag), which makes launch videos for whole projects. `whatsnew` focuses on *the change*: what one branch adds on top of another.
 
-> Status: early draft (v0.2). Captures real before/after screenshots of web apps; music and voiceover are next.
+> Status: early draft (v0.3). Captures real before/after screenshots of web apps; music and voiceover are next.
 
 ## What you get
 
@@ -44,6 +44,7 @@ From inside any git repository, in Claude Code (or another agent that supports A
 
 ## Requirements
 
+- macOS or Linux (on Windows, use WSL)
 - An agent that supports Agent Skills (e.g. Claude Code)
 - Node.js 18+ (22 recommended)
 - FFmpeg on your `PATH` — macOS: `brew install ffmpeg`

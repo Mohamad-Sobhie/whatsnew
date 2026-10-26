@@ -139,7 +139,10 @@ for (const shot of shots) {
     // Where the changed element sits in the screenshot, as percentages — used for .spot in the video.
     const measureFocus = async (frame) => {
       if (!shot.focus) return;
-      const fb = await page.locator(shot.focus).first().boundingBox();
+      // A focus element that only exists on one side (new feature) must not fail the shot.
+      const target = page.locator(shot.focus).first();
+      if ((await target.count()) === 0) { entry.focusError = `focus element not on this side: ${shot.focus}`; return; }
+      const fb = await target.boundingBox();
       if (!fb || !frame) { entry.focusError = `focus element not found: ${shot.focus}`; return; }
       const pct = (v, total) => `${((v / total) * 100).toFixed(1)}%`;
       entry.focus = {

@@ -37,6 +37,15 @@ Screenshots are 2× resolution, so they stay sharp at any size. Keep a captured 
 
 Add new classes freely, but keep them in the single `<style>` block.
 
+## Choosing the right block for screenshots
+
+- **Same screen changed** (before and after are the same page) → `.wipe`. It shows the change happening on one full-size screen, instead of two half-size ones the viewer has to compare.
+- **Different screens** (a flow was replaced by a different page) → `.ba` with an `<img>` in each `.panel`.
+- **New screen** (only exists after) → `.shot` in a `.media-row`, with a `New` chip.
+- **The manifest has a `focus` for the shot** → add a `.spot` with those coordinates. That's what the viewer's eye should land on; use it at least once per video.
+
+Follow what `plan.md` said under "How to show it"; if you change your mind, update the plan.
+
 ## Timing sanity check
 
 Before rendering, add up the scenes: the last scene's `--start` + `--len` should equal `data-duration`. Leave ~0.4 s between the end of one scene's reveal animations and its fade-out so text is readable.
