@@ -9,7 +9,7 @@
 
 Inspired by [brag](https://github.com/latent-spaces/brag), which makes launch videos for whole projects. `whatsnew` focuses on *the change*: what one branch adds on top of another.
 
-> Status: v0.4 — captures real before/after screenshots of web apps and brands the video with the app's logo, fonts and colours. Music and voiceover are next.
+> Status: v0.5 — captures real before/after screenshots of web apps and brands the video with the app's logo, fonts and colours. Music and voiceover are next.
 
 ## What you get
 
@@ -21,6 +21,7 @@ whatsnew-output/
 ├── shots/            # before-*.png / after-*.png screenshots + manifests
 ├── brand/            # the app's logo, found in your repo
 ├── fonts/            # the app's fonts, or the bundled ones
+├── previews/         # the four colour styles, for you to pick from
 ├── composition.html  # the video as an HTML page (edit and re-render)
 ├── whatsnew.mp4      # the video, 1920×1080
 └── share.md          # release note, Slack post, PR snippet
@@ -46,6 +47,13 @@ From inside any git repository, in Claude Code (or another agent that supports A
 | `--name`   | product name                   | from package.json/README |
 | `--no-capture` | skip running the app       | capture when UI changed |
 | `--before-url` / `--after-url` | capture from deployed environments (e.g. prod + PR preview) | run locally |
+| `--theme`  | `dark` `light` `soft` `bold`   | ask                    |
+| `--yes`    | skip both questions, use Claude's picks (use this in CI or scheduled runs) | ask |
+
+Before it renders, `/whatsnew` asks you two things:
+
+1. **Which changes go in the video.** It lists what it found in the diff, with its recommendations marked, and you tick the ones you want. Anything you leave out stays out of the video and the release notes.
+2. **Which colour style.** It renders a preview of your video in four styles made from your app's colours (light, dark, soft and bold), opens the preview image, and you pick one, or describe what you want ("darker", "use #1E40AF").
 
 ## Requirements
 
@@ -93,9 +101,9 @@ ln -s "$(pwd)/whatsnew/skills/whatsnew" ~/.claude/skills/whatsnew
 ## How it works
 
 1. `scripts/collect-diff.sh` gathers commits, diffstat and a trimmed diff (no lockfiles or build output).
-2. The agent sorts changes into features / improvements / under-the-hood, and plans 2–4 moments for the chosen audience (`references/storytelling.md`).
+2. The agent sorts changes into features / improvements / under-the-hood, **asks you which ones to include**, and plans 2–4 moments for the chosen audience (`references/storytelling.md`).
 3. For web apps with UI changes, `scripts/worktrees.sh` checks out both versions side by side (outside your repo), the agent starts both dev servers, and `scripts/capture.mjs` screenshots the changed screens on each — recording where the changed element sits so the video can spotlight it (`references/capture.md`).
-4. The agent writes the video as a single HTML page with CSS animations (`references/composition.md`, starting from `assets/template.html`).
+4. The agent writes the video as a single HTML page with CSS animations (`references/composition.md`, starting from `assets/template.html`), with four colour themes built from your app's colours. `scripts/preview.mjs` renders stills of each, and **you pick one**.
 5. `scripts/render.mjs` seeks every animation frame by frame in headless Chromium and pipes the frames to FFmpeg — deterministic, smooth output on any machine.
 6. The agent checks sample frames, fixes layout issues, and writes share copy.
 
@@ -113,6 +121,7 @@ node render.mjs ../assets/template.html /tmp/example.mp4
 - [ ] Background music and sound effects
 - [ ] Optional voiceover
 - [ ] Vertical (9:16) and square formats
+- [x] v0.5 — you choose the changes and the colour style before rendering
 - [x] v0.4 — branding: the app's logo, fonts and colours; no branch names on screen
 - [x] Claude Code plugin marketplace install and `npx skills add`
 

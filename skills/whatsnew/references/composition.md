@@ -68,7 +68,7 @@ Prefer a horizontal wordmark for `.logo`, and a square mark for `.brand-mark` if
 - Middle scenes: one `<img class="brand-mark">` directly in `.stage` with `--from` = start of scene 2 and `--until` = start of the last scene.
 - Last scene: the logo again, smaller.
 
-A dark logo on the dark video → add class `on-light`, or switch the theme to light (swap `--bg`/`--fg`). An SVG logo that uses web-font text renders with a fallback font inside `<img>` — if the text looks wrong, use a PNG of it (from the app's icons or a screenshot) instead. If nothing is found, leave the logos out and say so in the report; never invent a logo.
+The user picks one of four colour themes, so the logo must work on dark *and* light backgrounds. Every logo in the template is a pair: `<img class="for-dark …">` (the version made for dark backgrounds, usually light/white) and `<img class="for-light …">` (dark text); CSS shows the right one per theme. Use the app's own variants when it has them (`logo-dark.svg`, `logo-white.svg`, a dark-mode logo). With only one version, use it for both and add class `on-light` to the copy that sits on the wrong background. An SVG logo that uses web-font text renders with a fallback font inside `<img>` — if the text looks wrong, use a PNG of it (from the app's icons or a screenshot) instead. If nothing is found, leave the logos out and say so in the report; never invent a logo.
 
 ### Fonts
 
@@ -79,6 +79,23 @@ Never fall back to Inter, Roboto, Arial or the system UI font — they make ever
 
 The renderer warns about any font or image that failed to load — fix those before you deliver.
 
-## Palette
+## Colour themes
 
-The template ships with a neutral dark theme via CSS variables at the top (`--bg`, `--fg`, `--accent`, …). For a light theme, also set `--spot-dim` to a white veil (`rgba(255,255,255,.62)`) and make sure `.spot`'s ring colour (`--accent`) differs from the element it circles. If the repo has obvious brand colours (Tailwind config, CSS variables, theme file), swap them in — the video should feel like the product.
+The template has four themes, set as `html[data-theme="…"]` blocks. The user picks one before the final render (SKILL.md step 8). Rewrite all four from the app's colours — **keep the four names**, change only the values:
+
+| Theme   | What it is | How to derive it |
+|---------|------------|------------------|
+| `light` | The app as users know it, if the app is light | The app's own background, text and primary colour |
+| `dark`  | The app's dark mode, or a dark version of it | The app's dark-mode colours if it has them; otherwise a near-black tinted with the primary colour, light text, a brighter version of the primary as accent |
+| `soft`  | Lighter and calmer | A very pale tint of the primary colour as background (5–10% primary on white), dark text, the primary as accent |
+| `bold`  | Loud, for social posts | A deep shade of the primary colour as background, white text, a light tint of the primary (or the app's secondary colour) as accent |
+
+Where to find the app's colours: Tailwind config (`theme.extend.colors`, `primary`), CSS custom properties (`--primary`, `--brand`, `--background`), theme files (`theme.ts`, MUI/Chakra/Mantine theme objects, `tokens.json`), SCSS variables, `<meta name="theme-color">`, the logo itself, or the captured screenshots.
+
+Each theme sets the same variables: `--bg --bg-2 --panel --line --fg --muted --accent --accent-2 --on-accent --spot-dim`.
+- `--on-accent` is the text colour on accent-filled things (buttons, tags) — check it's readable.
+- `--spot-dim` is the veil outside a `.spot`: a dark veil on dark themes, a veil of the background colour on light ones (`rgba(255,255,255,.62)`).
+- `.spot`'s ring uses `--accent`; if the element it circles is the same colour, override the ring's `border-color` for that spot.
+- Text contrast: `--fg` on `--bg` and `--muted` on `--bg` must both be easy to read at a glance. Fix values that aren't.
+
+Never hard-code a colour elsewhere in the page (except inside code blocks) — use the variables, so all four previews are correct.
