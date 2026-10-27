@@ -1,15 +1,36 @@
 # whatsnew
 
-**Turn a branch diff into a feature intro video.**
+**Turn a feature branch into a short “what’s new” video, plus the release notes.**
 
-`/whatsnew` compares two git branches, works out what's actually new, and renders a short (20–45 s) "what's new" video plus ready-to-paste release notes — for developers, designers, and product owners.
+<p align="center"><img src="docs/intro.gif" alt="How whatsnew works: run /whatsnew with two branches, tick the changes to show, pick a colour style, get a video and release notes" width="800"></p>
 
-<p align="center"><img src="docs/demo.gif" alt="A 20-second whatsnew video: title card, before/after wipe of a checkout page, spotlight on the new pay button, recap" width="800"></p>
-<p align="center"><sub>Made with <code>/whatsnew</code> from a demo shop's feature branch: real screenshots of both branches, the app's own logo and colours.</sub></p>
+You finish a feature. Your PR description says “refactor checkout flow”. Your designer, product owner and users have no idea what changed.
+
+`/whatsnew` is an agent skill for Claude Code (and Cursor, Codex and other agents) that compares two git branches and makes a 20–45 second video showing what's new: real before/after screenshots of your app, in your app's logo, fonts and colours. It also writes a release note, a Slack post and a PR description.
+
+```
+/plugin install whatsnew --marketplace Mohamad-Sobhie/whatsnew
+```
+
+Then, in any repo: `/whatsnew:whatsnew main your-feature-branch`. More install options are under [Install](#install).
+
+## How it works
+
+1. **Run it with two branches.** It reads the diff and works out which changes users will actually notice.
+2. **Tick what to show.** You get the list of changes, with recommendations, and choose what goes in.
+3. **Pick a style.** It previews your video in four colour styles made from your app's colours: light, dark, soft or bold.
+4. **Get the video and the copy.** `whatsnew.mp4` plus `share.md` with a release note, a Slack/Teams post and a PR description.
+
+It only shows what's in the diff, never invents features, and keeps branch names and internal details off screen. Pick the audience with `--for dev`, `design` or `product`.
+
+## Example output
+
+<p align="center"><img src="docs/demo.gif" alt="Example whatsnew video: title card, before/after wipe of a checkout page, spotlight on the new pay button, recap" width="720"></p>
+<p align="center"><sub>Made with <code>/whatsnew</code> from a small demo shop's feature branch (a one-tap checkout).</sub></p>
+
+> Status: v0.5. Web apps get real before/after screenshots; other projects get visuals built from the code. Music and voiceover are next.
 
 Inspired by [brag](https://github.com/latent-spaces/brag), which makes launch videos for whole projects. `whatsnew` focuses on *the change*: what one branch adds on top of another.
-
-> Status: v0.5 — captures real before/after screenshots of web apps and brands the video with the app's logo, fonts and colours. Music and voiceover are next.
 
 ## What you get
 
@@ -50,7 +71,7 @@ From inside any git repository, in Claude Code (or another agent that supports A
 | `--theme`  | `dark` `light` `soft` `bold`   | ask                    |
 | `--yes`    | skip both questions, use Claude's picks (use this in CI or scheduled runs) | ask |
 
-Before it renders, `/whatsnew` asks you two things:
+Before it renders, `/whatsnew` asks you two things (skip them with `--yes`):
 
 1. **Which changes go in the video.** It lists what it found in the diff, with its recommendations marked, and you tick the ones you want. Anything you leave out stays out of the video and the release notes.
 2. **Which colour style.** It renders a preview of your video in four styles made from your app's colours (light, dark, soft and bold), opens the preview image, and you pick one, or describe what you want ("darker", "use #1E40AF").
