@@ -46,6 +46,58 @@ Add new classes freely, but keep them in the single `<style>` block.
 
 Follow what `plan.md` said under "How to show it"; if you change your mind, update the plan.
 
+## Page scene: breadcrumb + full page + pan/zoom + spot
+
+The scene pattern viewers follow best for a UI change. A component on its own leaves them guessing which page they're on, so show where it lives, then move in:
+
+1. **Breadcrumb row** with the chip: the menu path to the page, exactly as the app's navigation names it ("Inventory › Rope › Line › Certificate"). Take it from the router/menu config, not from the URL.
+2. **Headline** (≤ 6 words) and a **one-line subtitle**.
+3. **Framed full-page screenshot** (`.frame`, 1458×820 — the 1920×1080 capture at 0.76×). It holds still for ~1.5 s so viewers see the whole page, then pans and zooms (`.pan`) until the changed element is centred, then the `.spot` ring appears on it.
+4. Optionally a **second real crop that pops over the frame** (`.pop`) — the detail that is too small even when zoomed: an autocomplete list showing "Create …", a tooltip, a dialog.
+
+```html
+<section class="scene ui" style="--start: 4s; --len: 8s">
+  <div class="ui-head">
+    <div class="crumbs reveal"><span class="chip">New</span><span>Inventory</span><i>›</i><span>Rope</span><i>›</i><span>Line</span><i>›</i><b>Certificate</b></div>
+    <h2 class="ui-title reveal" style="--d: .1s">Replace a line's certificate</h2>
+    <p class="ui-sub reveal" style="--d: .2s">Upload the new file right on the line page.</p>
+  </div>
+  <div class="frame reveal-zoom" style="--d: .15s; --z: 1.56; --tx: 0px; --ty: -92px; --pan-at: 1.6s">
+    <div class="pan">
+      <img src="shots/after-certificate.png">
+      <div class="spot" style="--x: 14.22%; --y: 37.08%; --w: 35.31%; --h: 4.26%; --d: 3.4s"></div>
+    </div>
+    <img class="pop" src="shots/after-supplier-create.png" style="--d: 5.2s; right: 48px; bottom: 48px; width: 600px">
+  </div>
+</section>
+```
+
+**The pan/zoom maths.** `.pan` uses `transform-origin: 0 0` and animates to `translate(tx, ty) scale(z)`. For a frame of width `W` and height `H` (1458×820) and an element whose centre sits at fractions `fx`, `fy` of the screenshot (centre x ÷ page width, centre y ÷ page height):
+
+- zoom: `z` = as large as keeps the element comfortably in view — about `min(0.55·page_w / el_w, 0.55·page_h / el_h)`, clamped to **1 … 2.4** (more than ~2.4× and the 2× screenshot gets soft)
+- centre it: `tx = W/2 − z·fx·W`, `ty = H/2 − z·fy·H`
+- never show past the edge: clamp `tx` to `[W − z·W, 0]` and `ty` to `[H − z·H, 0]`
+
+You don't have to compute this: `mock-capture.mjs` prints it for every `box` (`pan --z:1.56; --tx:0px; --ty:-92px`), together with the `.spot` percentages. The spot sits *inside* `.pan`, so it zooms along with the screenshot; its ring is kept thin with `border-width: calc(4px / var(--z))`.
+
+Timing: `--pan-at` ≈ 1.4–1.8 s (after the frame has appeared), `--pan-len` 1.6 s, the spot's `--d` ≈ `--pan-at + --pan-len + 0.2 s`, a `.pop` 1–2 s after the spot. The scene needs ~7–8 s.
+
+## Flow scene: numbered cards (bug fixes and multi-step changes)
+
+For a change that only makes sense as a sequence, use `.flow` with numbered `.step-card`s, each a **real crop** of the part that changes plus a little context — the file row *with* its section heading and button, the status badge *with* its row label. Each card is a third (or, with `--cards: 2`, half) of the width: a crop that is a thin full-width strip turns into tiny text, so aim for a crop roughly 2:1 or squarer. Capture a list of selectors (`"capture": [".card h3", "#current-file", "button.save"]`) with `pad` 24–40 rather than one wide row. The flow centres itself in the space under the heading; don't push it around with margins.
+
+```html
+<div class="flow">
+  <div class="step-card reveal" style="--d: .3s"><div class="n">1 · Replace the file</div><img src="shots/after-replace.png"><p>Choose the new certificate</p></div>
+  <div class="step-card bad reveal" style="--d: 1.1s"><div class="n">2 · Before the fix ✗</div><img src="shots/before-after-refresh.png"><p>After refresh: the old file is back</p></div>
+  <div class="step-card good reveal" style="--d: 1.9s"><div class="n">3 · Now ✓</div><img src="shots/after-after-refresh.png"><p>After refresh: the new file stays</p></div>
+</div>
+```
+
+- Put the same breadcrumb + headline header (`.ui-head`) above it, with a `Fixed` chip for bug fixes.
+- `--cards: 2` or `4` on `.flow` changes the number of columns.
+- **A bug-fix scene shows the bug's real symptom and the fix — nothing else.** The before card shows what users actually saw go wrong (captured from the `before` build, or from mocks that reproduce the old behaviour when the bug was in the backend); the after card shows the same steps now working. Don't pad it with a nearby feature from another commit.
+
 ## Timing sanity check
 
 Before rendering, add up the scenes: the last scene's `--start` + `--len` should equal `data-duration`. Leave ~0.4 s between the end of one scene's reveal animations and its fade-out so text is readable.
@@ -63,7 +115,7 @@ Find the app's logo and copy it to `whatsnew-output/brand/` (keep its file type)
 3. App icons: `apple-touch-icon.png`, `icon.svg`, `favicon.svg`, the largest icon in `manifest.json` / `site.webmanifest`.
 4. With screenshots available: capture the header's logo element with a `selector` shot (`only: "after"`, name `logo`) and use that PNG.
 
-Prefer a horizontal wordmark for `.logo`, and a square mark for `.brand-mark` if both exist. Then:
+Prefer a horizontal wordmark for `.logo`, and a square mark for `.brand-mark` if both exist. A logo that only exists in its brand colour needs a white version for the dark and bold themes; make one that keeps the transparency with `ffmpeg -i logo.png -vf "format=rgba,lutrgb=r=255:g=255:b=255" logo-white.png` (for an SVG, change its `fill` colours to `#fff` instead). Then:
 - Title scene: `<img class="logo" src="brand/...">` above the headline.
 - Middle scenes: one `<img class="brand-mark">` directly in `.stage` with `--from` = start of scene 2 and `--until` = start of the last scene.
 - Last scene: the logo again, smaller.

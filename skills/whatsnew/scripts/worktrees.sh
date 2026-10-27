@@ -97,6 +97,7 @@ EOF
       done
       rm -f "$STATE"
     fi
+    kill_port 4103   # illustration server (references/capture.md), if one was started
     git worktree prune
     echo "worktrees removed"
     ;;

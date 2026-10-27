@@ -28,7 +28,7 @@ It only shows what's in the diff, never invents features, and keeps branch names
 <p align="center"><img src="docs/demo.gif" alt="Example whatsnew video: title card, before/after wipe of a checkout page, spotlight on the new pay button, recap" width="720"></p>
 <p align="center"><sub>Made with <code>/whatsnew</code> from a small demo shop's feature branch (a one-tap checkout).</sub></p>
 
-> Status: v0.5. Web apps get real before/after screenshots; other projects get visuals built from the code. Music and voiceover are next.
+> Status: v0.7. Web apps get real screenshots, even behind company SSO: it runs your existing production build with the API answered by mock data, so it needs no login, backend or database. Other projects get visuals built from the code. Music and voiceover are next.
 
 Inspired by [brag](https://github.com/latent-spaces/brag), which makes launch videos for whole projects. `whatsnew` focuses on *the change*: what one branch adds on top of another.
 
@@ -119,11 +119,11 @@ mkdir -p ~/.claude/skills
 ln -s "$(pwd)/whatsnew/skills/whatsnew" ~/.claude/skills/whatsnew
 ```
 
-## How it works
+## Under the hood
 
 1. `scripts/collect-diff.sh` gathers commits, diffstat and a trimmed diff (no lockfiles or build output).
 2. The agent sorts changes into features / improvements / under-the-hood, **asks you which ones to include**, and plans 2–4 moments for the chosen audience (`references/storytelling.md`).
-3. For web apps with UI changes, `scripts/worktrees.sh` checks out both versions side by side (outside your repo), the agent starts both dev servers, and `scripts/capture.mjs` screenshots the changed screens on each — recording where the changed element sits so the video can spotlight it (`references/capture.md`).
+3. For web apps with UI changes, the agent goes down a capture ladder: environments you point it at, then the app running locally, then **your production build with every API call answered by mock data** (`scripts/mock-capture.mjs`), which is the default when a login, SSO or a backend gets in the way. For the local route, `scripts/worktrees.sh` checks out both versions side by side (outside your repo), the agent starts both apps (dev servers, or built output via `scripts/serve-static.mjs`), and `scripts/capture.mjs` screenshots the changed screens on each — recording where the changed element sits so the video can spotlight it (`references/capture.md`).
 4. The agent writes the video as a single HTML page with CSS animations (`references/composition.md`, starting from `assets/template.html`), with four colour themes built from your app's colours. `scripts/preview.mjs` renders stills of each, and **you pick one**.
 5. `scripts/render.mjs` seeks every animation frame by frame in headless Chromium and pipes the frames to FFmpeg — deterministic, smooth output on any machine.
 6. The agent checks sample frames, fixes layout issues, and writes share copy.
@@ -142,6 +142,8 @@ node render.mjs ../assets/template.html /tmp/example.mp4
 - [ ] Background music and sound effects
 - [ ] Optional voiceover
 - [ ] Vertical (9:16) and square formats
+- [x] v0.7 — built app + mocked API as the default for apps behind SSO; page scenes that pan and zoom to the change; numbered before/after cards for bug fixes
+- [x] v0.6 — apps behind a login (log in once in a real browser), already-built apps (`dist/`), login-page detection
 - [x] v0.5 — you choose the changes and the colour style before rendering
 - [x] v0.4 — branding: the app's logo, fonts and colours; no branch names on screen
 - [x] Claude Code plugin marketplace install and `npx skills add`
@@ -150,7 +152,14 @@ node render.mjs ../assets/template.html /tmp/example.mp4
 
 1. Bump `version` in `.claude-plugin/plugin.json` (users on the plugin only get changes when the version changes).
 2. Run `claude plugin validate --strict .`
-3. Commit, tag (`git tag v0.3.0`) and push with `--tags`.
+3. Commit, tag (`git tag v0.6.0`) and push with `--tags`.
+
+The README intro (`docs/intro.gif`) is itself a whatsnew composition, `docs/intro.html`. To change it, edit the HTML, then:
+
+```bash
+node skills/whatsnew/scripts/render.mjs docs/intro.html /tmp/intro.mp4
+ffmpeg -i /tmp/intro.mp4 -vf "fps=15,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle" docs/intro.gif
+```
 
 ## License
 

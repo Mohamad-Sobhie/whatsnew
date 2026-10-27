@@ -30,11 +30,13 @@ Installed as a Claude Code plugin, the command is `/whatsnew:whatsnew`; the argu
 
 If the user gives a PR number or a description instead of branch names, work out the branches from git and confirm in one line before going on.
 
+**Check the direction** when one argument is a tag or release: `/whatsnew main 1.6.10` almost always means *what's new on main since 1.6.10* (base `1.6.10`, head `main`), not "what the old tag has that main doesn't". `collect-diff.sh` warns when the comparison looks reversed ("Check the direction" — e.g. 5 commits one way, 97 the other). Then confirm the direction in one line, with both commit counts, before going on.
+
 `<skill-dir>` below means the folder this SKILL.md lives in.
 
 ## Asking the user
 
-Two steps below ask the user to choose: **which changes go in the video** (step 4) and **which colour style** (step 8). Ask with your agent's multiple-choice question tool (`AskUserQuestion` in Claude Code). If there is none, ask in plain text with a numbered list and wait for the reply.
+Two steps below ask the user to choose: **which changes go in the video** (step 4) and **which colour style** (step 8). Two more come up only when needed: confirming the **direction** when the branches look reversed (Usage), and **how to continue** if real screens can't be rendered even with a mocked API (step 6). Ask with your agent's multiple-choice question tool (`AskUserQuestion` in Claude Code). If there is none, ask in plain text with a numbered list and wait for the reply.
 
 Don't ask when `--yes` was passed, or when you know nobody can answer (a scheduled job, CI). Then use your recommendations and say in the report what you chose. When asking in plain text, end your turn after the question and continue from the user's reply; the work done so far stays in `whatsnew-output/`. Never ask anything else unless you are truly blocked.
 
@@ -69,6 +71,8 @@ Sort every change into one of:
 Rules:
 - **Never invent.** Every claim in the video must trace back to the diff or commit messages. If you are unsure what something does, read the code; if still unsure, leave it out.
 - **Never leak secrets.** Do not put tokens, keys, internal URLs, env values, or customer data from the diff into the video or copy.
+- **Fictional data only on screen:** "Demo vessel", "Demo vessel 2", "Demo user", "Demo supplier" — never realistic customer, ship, people or company names, emails or URLs, even when the repo's fixtures contain them.
+- **Bug fixes: find the symptom.** For every fix, work out what users actually saw go wrong (commit message, linked issue, the code path) and what they see now — e.g. "after a refresh the old file came back; now the new one stays". That before/after *is* the scene. If the diff doesn't make the symptom clear — or the user names a fix in the change picker — ask in one line what users saw.
 - If nothing user-visible changed, tell the user and offer a short "changelog card" version (title + 3 bullet lines) instead of a full video.
 
 ### 4. Let the user pick the changes
@@ -96,7 +100,7 @@ Read `references/storytelling.md`, then write `whatsnew-output/plan.md`:
 # Moments            (2–4, from the ticked changes, ordered by impact)
   - What changed     (fact, with file/commit reference)
   - Why it matters   (for this audience)
-  - How to show it   (before/after, UI mock, code snippet, metric, flow)
+  - How to show it   (page scene with pan/zoom, before/after flow cards, code snippet, metric) + "illustration" if not a real render
 # Cut list           (things you deliberately left out, and why)
 ```
 
@@ -104,9 +108,21 @@ Show the user the headline and moments in 3–5 lines and continue — they alre
 
 ### 6. Capture real screens (web apps with UI changes)
 
-Read `references/capture.md` and follow it: check out both versions with `scripts/worktrees.sh`, start both apps, write `whatsnew-output/shots.json` from the moments in `plan.md`, run `scripts/capture.mjs` for `before` and `after`, look at every screenshot, then always run `worktrees.sh down`.
+Skip this step for non-UI changes or with `--no-capture`. Otherwise read `references/capture.md` and go down its **capture strategy ladder**, using the first rung that works:
 
-Skip this step for non-UI changes, for projects you can't start locally, or with `--no-capture`. If the app won't start (missing database, secrets), say what's missing in one line and continue with HTML visuals — capture is a bonus, never a blocker.
+- **a.** URLs the user gives (dev, test or preview environments) → `scripts/capture.mjs` against them.
+- **b.** The app running locally with no login, a dev auth bypass, or a documented demo account → `scripts/worktrees.sh`, dev servers or `scripts/serve-static.mjs`, then `capture.mjs`.
+- **c.** **The built SPA with a mocked API — the default whenever a login, SSO or backend blocks capture** → `scripts/mock-capture.mjs`. Check the build is current (newer than `head`, and contains a string from the new feature — `--expect`), write `mocks.mjs` from the generated API types with "Demo …" data, and iterate until the log shows no `MISS` and no `PAGEERROR`.
+- **d.** Only if (c) can't work (server-rendered pages) and the user agrees → a real login (`scripts/login.mjs`).
+- **e.** Last resort → illustrations styled with the app's own CSS, labelled as illustrations.
+
+Hard rules:
+- **Don't open a visible browser window or ask the user to sign in unless rung (c) can't work** — and then only after asking.
+- **Never** use, drive or copy from the user's own browser profile or cookies, and never ask the user to take screenshots by hand.
+- Checking whether a session is logged in: call an API endpoint **without following redirects** (`maxRedirects: 0`, `redirect: "manual"`) and accept only a `200` with a JSON body. An SSO page also answers `200` after redirects.
+- `capture.mjs` refuses login-page screenshots (exit code 3) — never use them, and never quietly replace them with rebuilt HTML.
+- Capture at **1920×1080, 2×** (narrower viewports squeeze tables). Take the full page for each UI moment and `box` the changed element; add tight crops for pop-over details and flow cards.
+- Look at every PNG before using it. Delete `whatsnew-output/auth*.json` when done, and always run `worktrees.sh down`.
 
 ### 7. Build the composition
 
@@ -121,8 +137,8 @@ mkdir -p whatsnew-output/brand
 - **Brand it** (see "Brand" in `references/composition.md`): find the app's logo and put it in `whatsnew-output/brand/`; use the app's fonts and colours when the repo has them. The example logos in the template's `brand/` are fictional — never ship them.
 - **No branch names, SHAs, PR numbers or file paths on screen.**
 
-- One idea per scene. Scenes of 3–6 seconds. Total duration = `--length`.
-- Visuals for UI changes: use the screenshots in `whatsnew-output/shots/` when you have them (`.wipe` for before/after, `.shot` + `.spot` to point at the change). Without screenshots, rebuild the relevant UI in HTML/CSS from the actual component code (real labels, real fields, real layout) — not a generic mock.
+- One idea per scene. Scenes of 3–6 seconds (page scenes with pan/zoom 7–8 s). Total duration = `--length`.
+- Visuals for UI changes: use the screenshots in `whatsnew-output/shots/`. Default for each UI moment: the **page scene** (breadcrumb + headline + full-page frame that pans and zooms to the change + `.spot`, optional `.pop` crop) — see `references/composition.md`. For bug fixes and multi-step changes: **numbered flow cards** showing the symptom and the fix. `.wipe` still suits a same-screen before/after. Without screenshots, use illustrations made with the app's own CSS (see `references/capture.md`); only if there is no usable CSS at all, rebuild the UI in the video's HTML from the component code (real labels, real fields, real layout) — never a generic mock.
 - Visuals for backend/dev changes: short code snippets (≤ 8 lines), API request/response pairs, or before/after numbers.
 - Keep all assets local. No external fonts, scripts, or images.
 - **Write all four colour themes** (`html[data-theme="dark|light|soft|bold"]` in the template) from the app's colours — see "Colour themes" in `references/composition.md`. Keep every other colour in the page on the theme variables, so switching theme switches everything.

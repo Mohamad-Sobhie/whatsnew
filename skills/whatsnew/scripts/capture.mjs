@@ -10,7 +10,7 @@
 //
 // Plan format: see references/capture.md.
 
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createRequire } from "node:module";
 
@@ -34,14 +34,15 @@ const baseUrl = opt("url");
 const label = opt("label");
 const outDir = opt("out", "whatsnew-output/shots");
 const readyTimeout = Number(opt("timeout", 180)) * 1000;
+const authPath = opt("auth");
 
 if (!baseUrl || !label) {
-  console.error("usage: node capture.mjs --plan shots.json --url http://localhost:4102 --label before|after [--out dir] [--timeout s]");
+  console.error("usage: node capture.mjs --plan shots.json --url http://localhost:4102 --label before|after [--auth auth.json] [--out dir] [--timeout s]");
   process.exit(1);
 }
 
 const plan = JSON.parse(readFileSync(planPath, "utf8"));
-const viewport = plan.viewport ?? { width: 1440, height: 900 };
+const viewport = plan.viewport ?? { width: 1920, height: 1080 };   // narrower squeezes tables
 const scale = plan.scale ?? 2;
 const shots = plan.shots ?? [];
 mkdirSync(outDir, { recursive: true });
@@ -101,6 +102,28 @@ async function settle(page) {
 console.log(`[${label}] waiting for ${baseUrl} …`);
 await waitForServer();
 
+// A session saved by login.mjs: cookies go in as-is (they ignore ports, so one login covers
+// both :4101 and :4102); localStorage and sessionStorage are re-applied on any port of the same
+// host, because the before and after apps run on different ports than the one the user logged in on.
+const auth = authPath ?? plan.auth;
+let storageState;
+let initStorage = null;
+if (auth) {
+  if (!existsSync(auth)) {
+    console.error(`error: auth file not found: ${auth} (run login.mjs first)`);
+    process.exit(1);
+  }
+  const saved = JSON.parse(readFileSync(auth, "utf8"));
+  storageState = { cookies: saved.cookies ?? [], origins: saved.origins ?? [] };
+  const app = saved.origins?.find((o) => o.origin === saved.appOrigin);
+  initStorage = {
+    host: new URL(saved.appOrigin).hostname,
+    local: Object.fromEntries((app?.localStorage ?? []).map((i) => [i.name, i.value])),
+    session: saved.sessionStorage ?? {},
+  };
+  console.log(`[${label}] using saved login from ${auth} (saved ${saved.savedAt ?? "?"})`);
+}
+
 const browser = await chromium.launch();
 const context = await browser.newContext({
   viewport,
@@ -108,8 +131,29 @@ const context = await browser.newContext({
   colorScheme: plan.colorScheme ?? "light",
   reducedMotion: "reduce",
   locale: plan.locale ?? "en-US",
+  storageState,
 });
+if (initStorage) {
+  await context.addInitScript((s) => {
+    if (location.hostname !== s.host) return;
+    for (const [k, v] of Object.entries(s.local)) if (localStorage.getItem(k) === null) localStorage.setItem(k, v);
+    for (const [k, v] of Object.entries(s.session)) if (sessionStorage.getItem(k) === null) sessionStorage.setItem(k, v);
+  }, initStorage);
+}
 const page = await context.newPage();
+
+// Did we land on a login page instead of the screen we asked for?
+const LOGIN_PATH = /(^|\/)(login|log-in|signin|sign-in|logon|auth|authorize|sso|oauth2?|saml|account\/login)(\/|$|\?)/i;
+async function loginWall(requestedPath) {
+  const now = new URL(page.url());
+  const want = new URL(url(requestedPath));
+  if (now.host !== want.host) return `redirected to ${now.host}`;
+  if (LOGIN_PATH.test(now.pathname) && !LOGIN_PATH.test(want.pathname)) return `redirected to ${now.pathname}`;
+  const pw = await page.locator("input[type=password]:visible").count().catch(() => 0);
+  if (pw > 0 && !LOGIN_PATH.test(want.pathname) && !shotsAllowPassword.has(requestedPath)) return "page shows a password field";
+  return null;
+}
+const shotsAllowPassword = new Set(shots.filter((s) => s.allowLogin).map((s) => s.path));
 const results = [];
 
 try {
@@ -132,9 +176,13 @@ for (const shot of shots) {
     const res = await page.goto(url(shot.path), { waitUntil: "networkidle", timeout: 60_000 });
     entry.status = res?.status();
     if (entry.status >= 400) throw new Error(`HTTP ${entry.status} for ${shot.path}`);
+    const wallBefore = await loginWall(shot.path);
+    if (wallBefore && !shot.allowLogin) { entry.loginWall = true; throw new Error(`login wall: ${wallBefore}`); }
     await runActions(page, shot.actions);
     if (shot.waitFor) await page.locator(shot.waitFor).first().waitFor({ timeout: 15_000 });
     await settle(page);
+    const wall = shot.allowLogin ? null : await loginWall(shot.path);
+    if (wall) { entry.loginWall = true; throw new Error(`login wall: ${wall}`); }
 
     // Where the changed element sits in the screenshot, as percentages — used for .spot in the video.
     const measureFocus = async (frame) => {
@@ -181,3 +229,7 @@ await browser.close();
 writeFileSync(join(outDir, `${label}-manifest.json`), JSON.stringify({ label, baseUrl, viewport, scale, results }, null, 2));
 const ok = results.filter((r) => r.ok).length;
 console.log(`[${label}] ${ok}/${results.length} shots captured → ${outDir}`);
+if (results.some((r) => r.loginWall)) {
+  console.log(`[${label}] LOGIN WALL: the app asked for a login${auth ? " even with the saved session (it may have expired, or the app needs its usual port)" : ""}. Do not use these shots — see "Apps behind a login" in references/capture.md.`);
+  process.exitCode = 3;
+}

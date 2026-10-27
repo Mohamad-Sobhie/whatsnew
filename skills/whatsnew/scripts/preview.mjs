@@ -77,6 +77,17 @@ for (const theme of themes) {
     await page.evaluate((ms) => {
       for (const a of document.getAnimations()) { a.pause(); a.currentTime = ms; }
     }, t * 1000);
+    // The theme's name is drawn in the page itself (on the first still), so no ffmpeg text filter is needed.
+    await page.evaluate(([name, show]) => {
+      document.getElementById("__wn_label")?.remove();
+      if (!show) return;
+      const el = document.createElement("div");
+      el.id = "__wn_label";
+      el.textContent = name;
+      el.style.cssText = "position:fixed;left:28px;bottom:28px;z-index:2147483647;padding:14px 30px;border-radius:999px;" +
+        "background:rgba(17,17,17,.88);color:#fff;font:600 54px/1 system-ui,sans-serif;letter-spacing:.02em";
+      document.body.appendChild(el);
+    }, [theme, i === 0]);
     const f = join(outDir, `.${theme}-${i}.png`);
     await page.screenshot({ path: f });
     frames.push(f);
@@ -86,26 +97,17 @@ for (const theme of themes) {
   const inputs = frames.flatMap((f) => ["-i", f]);
   const scaled = frames.map((_, i) => `[${i}]scale=960:-1[s${i}]`).join(";");
   const joined = frames.map((_, i) => `[s${i}]`).join("");
-  ff([...inputs, "-filter_complex", `${scaled};${joined}hstack=inputs=${frames.length}`, out]);
+  if (frames.length === 1) ff([...inputs, "-vf", "scale=960:-1", out]);
+  else ff([...inputs, "-filter_complex", `${scaled};${joined}hstack=inputs=${frames.length}`, out]);
   frames.forEach((f) => rmSync(f));
   rows.push({ theme, out });
   console.log(`${theme.padEnd(6)} background ${colours.bg}  text ${colours.text}  accent ${colours.accent}  → ${out}`);
 }
-await browser.close();
 
-// One overview image: each theme's row with its name on the left.
-const labelled = rows.map(({ theme, out }) => {
-  const f = join(outDir, `.label-${theme}.png`);
-  ff(["-i", out, "-vf", `pad=iw+260:ih:260:0:color=0x111111,drawtext=text='${theme}':x=36:y=(h-text_h)/2:fontsize=54:fontcolor=white`, f]);
-  return f;
-});
+// One overview image: every theme's row stacked (each row is labelled with its theme name).
 const all = join(outDir, "all.png");
-try {
-  ff([...labelled.flatMap((f) => ["-i", f]), "-filter_complex", `vstack=inputs=${labelled.length},scale=1600:-1`, all]);
-} catch {
-  // drawtext needs an ffmpeg built with freetype; fall back to unlabelled rows (order = --themes).
-  ff([...rows.flatMap((r) => ["-i", r.out]), "-filter_complex", `vstack=inputs=${rows.length},scale=1600:-1`, all]);
-  console.warn(`note: overview has no labels; rows are, top to bottom: ${themes.join(", ")}`);
-}
-labelled.forEach((f) => existsSync(f) && rmSync(f));
+if (rows.length === 1) ff(["-i", rows[0].out, "-vf", "scale=1600:-1", all]);
+else ff([...rows.flatMap((r) => ["-i", r.out]), "-filter_complex", `vstack=inputs=${rows.length},scale=1600:-1`, all]);
+await page.evaluate(() => document.getElementById("__wn_label")?.remove()).catch(() => {});
 console.log(`overview → ${all}`);
+await browser.close();
