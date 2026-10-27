@@ -13,7 +13,7 @@ You own the story. The scripts only collect facts and render frames — deciding
 
 ```
 /whatsnew [base] [head] [--for dev|design|product|all] [--length 20|30|45] [--name "Product name"]
-          [--no-capture] [--before-url URL --after-url URL] [--theme dark|light|soft|bold] [--yes]
+          [--no-capture] [--before-url URL --after-url URL] [--theme dark|light|soft|bold] [--export gif,stills,screenshots] [--yes]
 ```
 
 - `base` — the branch being compared against. Default: the repo's default branch (`main` / `master`).
@@ -24,6 +24,7 @@ You own the story. The scripts only collect facts and render frames — deciding
 - `--no-capture` — don't run the app; build all visuals in HTML.
 - `--before-url` / `--after-url` — capture from already-running environments (e.g. production and a PR preview) instead of starting the app locally.
 - `--theme` — pick the colour style up front and skip that question.
+- `--export` — also export a GIF, one still image per scene, and/or the app screenshots; skips the export question.
 - `--yes` — don't ask anything; use your own recommendations for changes and colours, and list them in the report.
 
 Installed as a Claude Code plugin, the command is `/whatsnew:whatsnew`; the arguments are the same.
@@ -36,7 +37,7 @@ If the user gives a PR number or a description instead of branch names, work out
 
 ## Asking the user
 
-Two steps below ask the user to choose: **which changes go in the video** (step 4) and **which colour style** (step 8). Two more come up only when needed: confirming the **direction** when the branches look reversed (Usage), and **how to continue** if real screens can't be rendered even with a mocked API (step 6). Ask with your agent's multiple-choice question tool (`AskUserQuestion` in Claude Code). If there is none, ask in plain text with a numbered list and wait for the reply.
+Two steps below ask the user to choose: **which changes go in the video** (step 4) and **which colour style and extra exports** (step 8, one call). Two more come up only when needed: confirming the **direction** when the branches look reversed (Usage), and **how to continue** if real screens can't be rendered even with a mocked API (step 6). Ask with your agent's multiple-choice question tool (`AskUserQuestion` in Claude Code). If there is none, ask in plain text with a numbered list and wait for the reply.
 
 Don't ask when `--yes` was passed, or when you know nobody can answer (a scheduled job, CI). Then use your recommendations and say in the report what you chose. When asking in plain text, end your turn after the question and continue from the user's reply; the work done so far stays in `whatsnew-output/`. Never ask anything else unless you are truly blocked.
 
@@ -143,7 +144,7 @@ mkdir -p whatsnew-output/brand
 - Keep all assets local. No external fonts, scripts, or images.
 - **Write all four colour themes** (`html[data-theme="dark|light|soft|bold"]` in the template) from the app's colours — see "Colour themes" in `references/composition.md`. Keep every other colour in the page on the theme variables, so switching theme switches everything.
 
-### 8. Let the user pick the colours
+### 8. Let the user pick the colours (and extra exports)
 
 Render a still preview of every theme:
 
@@ -158,7 +159,9 @@ Show it to the user: open `all.png` in their image viewer (`open` on macOS, `xdg
 - `label`: "Light", "Dark", "Soft", "Bold" plus a two-word hint ("Light — app colours"); `description`: one line of what it looks like; `preview` (if the tool supports it): the background, text and accent hex values the script printed.
 - A typed answer ("darker green", "use #1E40AF", "like the dark one but warmer"): adjust that theme, re-run the preview, and ask once more.
 
-Set the choice on the root element, `<html lang="en" data-theme="light">`. With `--theme` given, skip the question but still look at that theme's preview.
+In the **same question call**, ask a second, multi-select question: *"Also export as?"* — options **GIF** ("for READMEs, Slack and tickets"), **Stills** ("one image per scene, for slides and docs"), **Screenshots** ("the clean app screens the video uses" — only offer it when screens were captured). Nothing ticked means just the MP4. Skip this question when `--export` was given; with `--yes` and no `--export`, export nothing extra.
+
+Set the colour choice on the root element, `<html lang="en" data-theme="light">`. With `--theme` given, skip the colour question but still look at that theme's preview.
 
 ### 9. Render
 
@@ -178,7 +181,17 @@ ffmpeg -loglevel error -y -ss <seconds> -i whatsnew-output/whatsnew.mp4 -frames:
 
 Fix and re-render if you see: text overflowing or clipped, overlapping elements, unreadable contrast, an empty scene, or a claim that isn't in the diff. Delete the check images when done.
 
-### 11. Write the share copy
+### 11. Export
+
+If GIF, stills or screenshots were chosen:
+
+```
+node <skill-dir>/scripts/export.mjs --gif --stills --screenshots   # only the chosen ones
+```
+
+It writes to `whatsnew-output/export/`: `whatsnew.gif` (960 px, 15 fps — it warns above 10 MB; use `--gif-width 720 --gif-fps 12` to shrink), `stills/01-<scene>.png …` (3840×2160, each scene once everything in it has appeared) and `screenshots/` (the `before-*`/`after-*` app captures). Open one still and the GIF's first frames to check them.
+
+### 12. Write the share copy
 
 Write `whatsnew-output/share.md` with:
 
@@ -188,10 +201,10 @@ Write `whatsnew-output/share.md` with:
 
 Same rules: only what is in the diff and what the user ticked, matched to the audience.
 
-### 12. Report
+### 13. Report
 
 Tell the user, briefly:
-- where the video is (`whatsnew-output/whatsnew.mp4`) and its length,
+- where the video is (`whatsnew-output/whatsnew.mp4`) and its length, plus any exports (`whatsnew-output/export/`),
 - the headline you chose, and the changes and colour style used (say which ones you picked yourself because nobody was asked),
 - anything you cut or were unsure about.
 

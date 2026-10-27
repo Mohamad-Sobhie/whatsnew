@@ -19,7 +19,7 @@ Then, in any repo: `/whatsnew:whatsnew main your-feature-branch`. More install o
 1. **Run it with two branches.** It reads the diff and works out which changes users will actually notice.
 2. **Tick what to show.** You get the list of changes, with recommendations, and choose what goes in.
 3. **Pick a style.** It previews your video in four colour styles made from your app's colours: light, dark, soft or bold.
-4. **Get the video and the copy.** `whatsnew.mp4` plus `share.md` with a release note, a Slack/Teams post and a PR description.
+4. **Get the video and the copy.** `whatsnew.mp4` plus `share.md` with a release note, a Slack/Teams post and a PR description, and optionally a GIF, one still per scene and the app screenshots.
 
 It only shows what's in the diff, never invents features, and keeps branch names and internal details off screen. Pick the audience with `--for dev`, `design` or `product`.
 
@@ -28,7 +28,7 @@ It only shows what's in the diff, never invents features, and keeps branch names
 <p align="center"><img src="docs/demo.gif" alt="Example whatsnew video: title card, before/after wipe of a checkout page, spotlight on the new pay button, recap" width="720"></p>
 <p align="center"><sub>Made with <code>/whatsnew</code> from a small demo shop's feature branch (a one-tap checkout).</sub></p>
 
-> Status: v0.7. Web apps get real screenshots, even behind company SSO: it runs your existing production build with the API answered by mock data, so it needs no login, backend or database. Other projects get visuals built from the code. Music and voiceover are next.
+> Status: v0.8. Web apps get real screenshots, even behind company SSO: it runs your existing production build with the API answered by mock data, so it needs no login, backend or database. Other projects get visuals built from the code. Music and voiceover are next.
 
 Inspired by [brag](https://github.com/latent-spaces/brag), which makes launch videos for whole projects. `whatsnew` focuses on *the change*: what one branch adds on top of another.
 
@@ -45,6 +45,7 @@ whatsnew-output/
 ├── previews/         # the four colour styles, for you to pick from
 ├── composition.html  # the video as an HTML page (edit and re-render)
 ├── whatsnew.mp4      # the video, 1920×1080
+├── export/           # optional: whatsnew.gif, stills/ (one PNG per scene), screenshots/
 └── share.md          # release note, Slack post, PR snippet
 ```
 
@@ -69,12 +70,13 @@ From inside any git repository, in Claude Code (or another agent that supports A
 | `--no-capture` | skip running the app       | capture when UI changed |
 | `--before-url` / `--after-url` | capture from deployed environments (e.g. prod + PR preview) | run locally |
 | `--theme`  | `dark` `light` `soft` `bold`   | ask                    |
+| `--export` | `gif` `stills` `screenshots`   | ask                    |
 | `--yes`    | skip both questions, use Claude's picks (use this in CI or scheduled runs) | ask |
 
 Before it renders, `/whatsnew` asks you two things (skip them with `--yes`):
 
 1. **Which changes go in the video.** It lists what it found in the diff, with its recommendations marked, and you tick the ones you want. Anything you leave out stays out of the video and the release notes.
-2. **Which colour style.** It renders a preview of your video in four styles made from your app's colours (light, dark, soft and bold), opens the preview image, and you pick one, or describe what you want ("darker", "use #1E40AF").
+2. **Which colour style, and any extra formats.** It renders a preview of your video in four styles made from your app's colours (light, dark, soft and bold), opens the preview image, and you pick one, or describe what you want ("darker", "use #1E40AF"). In the same step you can tick extra exports: a **GIF** for READMEs, Slack and tickets, a **still image per scene** for slides and docs, and the **clean app screenshots** the video was made from.
 
 ## Requirements
 
@@ -142,6 +144,7 @@ node render.mjs ../assets/template.html /tmp/example.mp4
 - [ ] Background music and sound effects
 - [ ] Optional voiceover
 - [ ] Vertical (9:16) and square formats
+- [x] v0.8 — export as GIF, one still per scene, and the app screenshots
 - [x] v0.7 — built app + mocked API as the default for apps behind SSO; page scenes that pan and zoom to the change; numbered before/after cards for bug fixes
 - [x] v0.6 — apps behind a login (log in once in a real browser), already-built apps (`dist/`), login-page detection
 - [x] v0.5 — you choose the changes and the colour style before rendering
